@@ -60,11 +60,11 @@ public class SpreadsheetGrid : ScrollView, IDrawable
 
     public SpreadsheetGrid()
     {
-        BackgroundColor = Colors.LightGray;
+        BackgroundColor = Color.Parse("#788475");
         graphicsView.Drawable = this;
         graphicsView.HeightRequest = LABEL_ROW_HEIGHT + (ROW_COUNT + 1) * DATA_ROW_HEIGHT;
         graphicsView.WidthRequest = LABEL_COL_WIDTH + (COL_COUNT + 1) * DATA_COL_WIDTH;
-        graphicsView.BackgroundColor = Colors.LightGrey;
+        graphicsView.BackgroundColor = Color.Parse("#788475");
         graphicsView.EndInteraction += OnEndInteraction;
         this.Content = graphicsView;
         this.Scrolled += OnScrolled;
@@ -251,7 +251,7 @@ public class SpreadsheetGrid : ScrollView, IDrawable
         canvas.Translate((float)_scrollX, (float)_scrollY);
 
         // Color the background of the data area white
-        canvas.FillColor = Colors.White;
+        canvas.FillColor = Color.Parse("#F0F6F6");
         canvas.FillRectangle(
             LABEL_COL_WIDTH,
             LABEL_ROW_HEIGHT,
