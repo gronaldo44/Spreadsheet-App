@@ -3,14 +3,57 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:SS="clr-namespace:SS"
              x:Class="SpreadsheetGUI.MainPage">
+
     <ContentPage.MenuBarItems>
         <MenuBarItem Text="File">
             <MenuFlyoutItem Text="New" Clicked="NewClicked" />
             <MenuFlyoutItem Text="Open" Clicked="OpenClicked" />
         </MenuBarItem>
     </ContentPage.MenuBarItems>
-    <Grid>
-        <SS:SpreadsheetGrid x:Name="spreadsheetGrid" />
+
+    <Grid 
+        RowDefinitions="50, *" 
+        ColumnDefinitions="*, *"
+        BackgroundColor="#8B9474">
+        <HorizontalStackLayout 
+            Grid.Row="0"
+            Grid.Column="0"
+            Spacing="50"
+            VerticalOptions="Center"
+            HorizontalOptions="Center">
+            <Entry 
+                x:Name="selectedCellNameBox"
+                Text="Selected Cell: "
+                TextColor="#1A181B"
+                IsEnabled="false"/>
+
+            <Entry
+                x:Name="selectedCellValueBox"
+                Text="Value: "
+                TextColor="#1A181B"
+                IsEnabled="false"/>
+        </HorizontalStackLayout>
+        <HorizontalStackLayout
+            Grid.Row="0"
+            Grid.Column="1"
+            VerticalOptions="Center"
+            HorizontalOptions="Center">
+            <Label 
+                Text="Cell Contents:"
+                TextColor="#1A181B"
+                Padding="5"/>
+            <Entry
+                x:Name="setCellContentsBox"
+                Text=""
+                Completed="SetCellContentsBox_Completed"
+                TextColor="#1A181B"/>
+        </HorizontalStackLayout>
+        
+        <SS:SpreadsheetGrid 
+            Grid.Row="1"
+            Grid.ColumnSpan="2"
+            x:Name="spreadsheetGrid" />
     </Grid>
+
 </ContentPage>
 
