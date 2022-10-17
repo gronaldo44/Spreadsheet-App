@@ -21,10 +21,11 @@
         RowDefinitions="50, *" 
         ColumnDefinitions="*, *"
         BackgroundColor="#8B9474">
+        
         <HorizontalStackLayout 
             Grid.Row="0"
             Grid.Column="0"
-            Spacing="50"
+            Spacing="10"
             VerticalOptions="Center"
             HorizontalOptions="Center">
             <Entry 
