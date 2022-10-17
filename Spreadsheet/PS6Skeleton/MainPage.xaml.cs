@@ -24,11 +24,6 @@ public partial class MainPage : ContentPage
     {
         InitializeComponent();
 
-        // This an example of registering a method so that it is notified when
-        // an event happens.  The SelectionChanged event is declared with a
-        // delegate that specifies that all methods that register with it must
-        // take a SpreadsheetGrid as its parameter and return nothing.  So we
-        // register the displaySelection method below.
         spreadsheetGrid.SelectionChanged += clickedCell;
 
         // Initialize the Model
@@ -102,7 +97,8 @@ public partial class MainPage : ContentPage
         if (saveOld)
         {   // ALERT ask where they want to save the spreadsheet
             Alert_SaveAs(AlterSpreadsheet, "reset");
-        } else
+        }
+        else
         {
             AlterSpreadsheet("reset");
         }
@@ -136,7 +132,8 @@ public partial class MainPage : ContentPage
                 if (saveOld)
                 {   // ALERT ask where they want to save the spreadsheet
                     Alert_SaveAs(OverwriteSpreadsheet, fileResult.FullPath);
-                } else
+                }
+                else
                 {
                     OverwriteSpreadsheet(fileResult.FullPath);
                 }
@@ -198,14 +195,22 @@ public partial class MainPage : ContentPage
         spreadsheetGrid.GetSelection(out int col, out int row);
 
         bool dontUpdate = false;
-        IList<string> changed = spreadsheet.SetContentsOfCell(cell, newContents);
-        foreach (string c in changed)
+        IList<string> changed = null;   // this will never be used while null
+        try
         {
-            if (spreadsheet.GetCellValue(c) is FormulaError)
+            changed = spreadsheet.SetContentsOfCell(cell, newContents);
+            foreach (string c in changed)
             {
-                spreadsheet.SetContentsOfCell(cell, oldContents);
-                dontUpdate = true;
+                if (spreadsheet.GetCellValue(c) is FormulaError)
+                {
+                    spreadsheet.SetContentsOfCell(cell, oldContents);
+                    dontUpdate = true;
+                }
             }
+        }
+        catch (CircularException)
+        {
+            dontUpdate = true;
         }
         if (dontUpdate)
         {   // The cell was reverted to its old value and the user is allerted
@@ -310,6 +315,7 @@ public partial class MainPage : ContentPage
             CalculateGridPosition(cell, out int col, out int row);
             if (!UpdateCell(cell, col, row))
             {
+
                 updated = false;
             }
         }
