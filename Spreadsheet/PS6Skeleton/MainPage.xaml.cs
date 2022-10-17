@@ -415,6 +415,11 @@ public partial class MainPage : ContentPage
         if (filepath != null)
         {
             filepath += ".sprd";
+            if (File.Exists(filepath))
+            {
+                await DisplayAlert("File Overwritten", "This operation resulted in a file " +
+                    "being overwritten.", "OK");
+            }
             spreadsheet.Save(filepath);
             continueAfterSave(methodArg);
         }
