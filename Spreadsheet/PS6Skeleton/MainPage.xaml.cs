@@ -183,6 +183,31 @@ public partial class MainPage : ContentPage
         }
     }
 
+    // TODO: Save the spreadsheet
+    /*
+     * Possible solution: use a prompt
+     */
+    private void SaveAs_Clicked(object sender, EventArgs e)
+    {
+        // TODO: implement
+    }
+
+    // TODO: Help menu
+    private void CellInputs_Clicked(object sender, EventArgs e)
+    {
+        // TODO: implement
+    }
+
+    private void Saving_Clicked(object sender, EventArgs e)
+    {
+        // TODO: implement
+    }
+
+    private void AdditionalContent_Clicked(object sender, EventArgs e)
+    {
+        // TODO: Rename, come up with, and implement
+    }
+
     /// <summary>
     /// Sets the cell's contents to the text in the cell contents text entry.
     /// 
@@ -321,19 +346,6 @@ public partial class MainPage : ContentPage
         row = index - 1;
     }
 
-    // TODO: Save the spreadsheet
-    /*
-     * Possible solution: use a prompt
-     */
-
-    // TODO: Help menu
-
-    // TODO: Alert Messages
-
-    /*
-     * Alert for overwriting saved data: COMPLETE
-     */
-
     /// <summary>
     /// Alerts the User that their entry would result in a FormulaError
     /// </summary>
@@ -350,23 +362,26 @@ public partial class MainPage : ContentPage
         await DisplayAlert("Invalid Spreadsheet File", "The selected file contains errors.", "OK");
     }
 
-    // TODO: General problems
-    /*
-     * See if formulas are working as intended
-     * What should we do when we open a spreadsheet with incompatible version
-     */
-
     // TODO: Additional Content
 
     /*
      * I don't know how to comment .xaml files so I will note what's going on here.
      * 
-     * MenuBarItems: Idk wtf is going on here exactly yet lol
+     * MenuBarItems: Tabs for putting drop-down lists
+     *      1 First tab is file
+     *      --1.1 New: reset the spreadsheet
+     *      --1.2 Open: Open a new spreadsheet from a save file
+     *      --1.3 Save As: Save the spreadsheet
+     *      2 Second tab is help
+     *      --2.1 Cell Inputs: explain how cell inputs work
+     *      --2.2 Saving: explain how saving works
+     *      --2.3 ADDITIONAL-CONTENT: explain our additional content
      * 
      * Grid: Just a layout for adding content to the GUI.
      *      The first row is a navigation bar
+     *          First column of the navbar is for entering cell inputs
+     *          I am setting the second column of the nav aside for ADDITIONAL-CONTENT
      *      The Second row is the spreadsheet
-     *      --It may be a good idea to put an entry for a filepath for saving
-     *          the spreadsheet on a third row.
+     *    
      */
 }
