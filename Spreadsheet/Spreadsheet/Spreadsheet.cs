@@ -348,6 +348,18 @@ namespace SS
         {
             if (text == "")
             {   // Empty cells are not documented
+                if (cells.ContainsKey(name))
+                {
+                    foreach(string dependee in cellDependency.GetDependees(name))
+                    {
+                        if (cells[dependee].Contents.ToString() == "")
+                        {
+                            cells.Remove(dependee);
+                            cellDependency.RemoveDependency(name, dependee);
+                        }
+                    }
+                    cells.Remove(name);
+                }
                 return new List<string>();
             }
             return DocumentCell(name, text);

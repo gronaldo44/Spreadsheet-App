@@ -1419,6 +1419,33 @@ namespace SpreadsheetTests
                     result = e;
                 }
             }
+
+        }
+
+        [TestClass()]
+        public class PS6Tests
+        {
+            [TestMethod]
+            public void ComplexCellDependencyRemoved()
+            {
+                Spreadsheet s = new();
+                s.SetContentsOfCell("a1", "=b2");
+                s.SetContentsOfCell("a1", "");
+                Assert.AreEqual("", s.GetCellContents("a1").ToString());
+                Assert.AreEqual("", s.GetCellContents("b2"), ToString());
+            }
+
+            [TestMethod]
+            public void RemovingDependentCell()
+            {
+                Spreadsheet s = new();
+                s.SetContentsOfCell("b1", "=a1");
+                s.SetContentsOfCell("a1", "5");
+                Assert.AreEqual(5.0, s.GetCellValue("b1"));
+                s.SetContentsOfCell("a1", "");
+                Assert.IsFalse(s.GetCellValue("b1") is FormulaError);
+                Assert.AreEqual("", s.GetCellValue("a1").ToString());
+            }
         }
 
     }
