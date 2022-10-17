@@ -355,7 +355,7 @@ namespace SS
                         if (cells[dependee].Contents.ToString() == "")
                         {
                             cells.Remove(dependee);
-                            cellDependency.RemoveDependency(name, dependee);
+                            cellDependency.RemoveDependency(dependee, name);
                         }
                     }
                     cells.Remove(name);
