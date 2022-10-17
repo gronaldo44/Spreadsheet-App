@@ -6,8 +6,8 @@
 
     <ContentPage.MenuBarItems>
         <MenuBarItem Text="File">
-            <MenuFlyoutItem Text="New" Clicked="NewClicked" />
-            <MenuFlyoutItem Text="Open" Clicked="OpenClicked" />
+            <MenuFlyoutItem Text="New" Clicked="New_Clicked" />
+            <MenuFlyoutItem Text="Open" Clicked="Open_Clicked" />
         </MenuBarItem>
     </ContentPage.MenuBarItems>
 
