@@ -1,6 +1,8 @@
 ﻿using Microsoft.Maui.Controls.Compatibility.Platform.UWP;
+using Microsoft.Maui.Storage;
 using SpreadsheetUtilities;
 using SS;
+using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
@@ -12,6 +14,7 @@ namespace SpreadsheetGUI;
 /// </summary>
 public partial class MainPage : ContentPage
 {
+    private delegate void AfterSaving(string filepath);    // Method for following up saves
     private Spreadsheet spreadsheet;    // model
 
     /// <summary>
@@ -33,23 +36,6 @@ public partial class MainPage : ContentPage
         // Initialize the View
         spreadsheetGrid.SetSelection(0, 0);
         UpdateNav(0, 0);
-    }
-
-    /// <summary>
-    /// A new cell has been clicked
-    /// 
-    /// Focus the cell that got clicked in the grid and navigation bar
-    /// 
-    /// The Navigation bar is used to view and alter the currently selected cell
-    /// </summary>
-    /// <param name="grid"></param>
-    private void clickedCell(SpreadsheetGrid grid)
-    {
-        // Update Grid
-        spreadsheetGrid.GetSelection(out int col, out int row);
-        spreadsheetGrid.GetValue(col, row, out string value);
-        // Update Nav
-        UpdateNav(col, row);
     }
 
     /// <summary>
@@ -79,6 +65,23 @@ public partial class MainPage : ContentPage
     }
 
     /// <summary>
+    /// A new cell has been clicked
+    /// 
+    /// Focus the cell that got clicked in the grid and navigation bar
+    /// 
+    /// The Navigation bar is used to view and alter the currently selected cell
+    /// </summary>
+    /// <param name="grid"></param>
+    private void clickedCell(SpreadsheetGrid grid)
+    {
+        // Update Grid
+        spreadsheetGrid.GetSelection(out int col, out int row);
+        spreadsheetGrid.GetValue(col, row, out string value);
+        // Update Nav
+        UpdateNav(col, row);
+    }
+
+    /// <summary>
     /// Open a new empty spreadsheet GUI
     /// 
     /// Alerts if the user is attempting to overwrite an unsaved spreadsheet
@@ -90,25 +93,19 @@ public partial class MainPage : ContentPage
     private async void New_Clicked(Object sender, EventArgs e)
     {
         // Protect unsaved data in the current spreadsheet
-        bool saveOld = true;
+        bool saveOld = false;
         if (spreadsheet.Changed)
         { // ALERT if they are sure they want to overwrite this spreadsheet's data
             saveOld = await DisplayAlert("Unsaved Spreadsheet", "This operation would " +
                 "result in the loss of data. Do you wist to save first?", "Yes", "No");
         }
         if (saveOld)
+        {   // ALERT ask where they want to save the spreadsheet
+            Alert_SaveAs(AlterSpreadsheet, "reset");
+        } else
         {
-            // TODO: save the old spreadsheet
+            AlterSpreadsheet("reset");
         }
-
-
-        // Reset the model
-        spreadsheet = new Spreadsheet(validator, normalizer, "ps6");
-        // Reset the view
-        spreadsheetGrid.Clear();
-        spreadsheetGrid.SetSelection(0, 0);
-        UpdateNav(0, 0);
-
     }
 
     /// <summary>
@@ -130,46 +127,19 @@ public partial class MainPage : ContentPage
                 Debug.WriteLine("Succesfully chose file: " + fileResult.FileName);
 
                 // Protect unsaved data in the current spreadsheet
-                bool saveOld = true;
+                bool saveOld = false;
                 if (spreadsheet.Changed)
-                { // ALERT if they are sure they want to overwrite this spreadsheet's data
+                {   // ALERT if they are sure they want to overwrite this spreadsheet's data
                     saveOld = await DisplayAlert("Unsaved Spreadsheet", "This operation would " +
                         "result in the loss of data. Do you wist to save first?", "Yes", "No");
                 }
                 if (saveOld)
+                {   // ALERT ask where they want to save the spreadsheet
+                    Alert_SaveAs(OverwriteSpreadsheet, fileResult.FullPath);
+                } else
                 {
-                    // TODO: save the old spreadsheet
+                    OverwriteSpreadsheet(fileResult.FullPath);
                 }
-
-                // Overwrite the model
-                Spreadsheet oldSpreadsheet = spreadsheet;  // Safety in case of bad load
-                bool validSpreadsheet = true;
-                try
-                {
-                    spreadsheet = new Spreadsheet(fileResult.FullPath, validator, normalizer, "ps6");
-                }
-                catch
-                {
-                    validSpreadsheet = false;
-                }
-                // Overwrite the view
-                IEnumerable<string> namedCells = spreadsheet.GetNamesOfAllNonemptyCells();
-                if (!UpdateGrid(namedCells))
-                {
-                    validSpreadsheet = false;
-                }
-                if (validSpreadsheet)
-                {
-                    spreadsheetGrid.Clear();
-                    spreadsheetGrid.SetSelection(0, 0);
-                    UpdateNav(0, 0);
-                }
-                else
-                {
-                    spreadsheet = oldSpreadsheet;
-                    Alert_SpreadsheetCannotBeLoaded();
-                }
-
             }
             else
             {
@@ -183,13 +153,16 @@ public partial class MainPage : ContentPage
         }
     }
 
-    // TODO: Save the spreadsheet
-    /*
-     * Possible solution: use a prompt
-     */
+    /// <summary>
+    /// Alerts the user to enter a filepath and saves the spreadsheet there
+    /// 
+    /// Function is called when a user clicks the Save As button in the File menu
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e"></param>
     private void SaveAs_Clicked(object sender, EventArgs e)
     {
-        // TODO: implement
+        Alert_SaveAs(AlterSpreadsheet, "");
     }
 
     // TODO: Help menu
@@ -243,6 +216,59 @@ public partial class MainPage : ContentPage
             UpdateGrid(changed);
         }
         UpdateNav(col, row);
+    }
+
+    /// <summary>
+    /// Alters the spreadsheet based on the argued action
+    /// </summary>
+    /// <param name="action"></param>
+    private void AlterSpreadsheet(string action)
+    {
+        if (action == "reset")
+        {
+            // Reset the model
+            spreadsheet = new Spreadsheet(validator, normalizer, "ps6");
+            // Reset the view
+            spreadsheetGrid.Clear();
+            spreadsheetGrid.SetSelection(0, 0);
+            UpdateNav(0, 0);
+        }
+    }
+
+    /// <summary>
+    /// Overwrites the spreadsheet with the spreadsheet saved in the argued filepath
+    /// </summary>
+    /// <param name="filepath"></param>
+    private void OverwriteSpreadsheet(string filepath)
+    {
+        // Overwrite the model
+        Spreadsheet oldSpreadsheet = spreadsheet;  // Safety in case of bad load
+        bool validSpreadsheet = true;
+        try
+        {
+            spreadsheet = new Spreadsheet(filepath, validator, normalizer, "ps6");
+        }
+        catch
+        {
+            validSpreadsheet = false;
+        }
+        // Overwrite the view
+        IEnumerable<string> namedCells = spreadsheet.GetNamesOfAllNonemptyCells();
+        spreadsheetGrid.Clear();
+        if (!UpdateGrid(namedCells))
+        {
+            validSpreadsheet = false;
+        }
+        if (validSpreadsheet)
+        {
+            spreadsheetGrid.SetSelection(0, 0);
+            UpdateNav(0, 0);
+        }
+        else
+        {
+            spreadsheet = oldSpreadsheet;
+            Alert_SpreadsheetCannotBeLoaded();
+        }
     }
 
     /// <summary>
@@ -362,7 +388,26 @@ public partial class MainPage : ContentPage
         await DisplayAlert("Invalid Spreadsheet File", "The selected file contains errors.", "OK");
     }
 
-    // TODO: Additional Content
+    /// <summary>
+    /// Alerts the user asking where they want to save the spreadsheet, saves it there, 
+    /// then continues onward to another method.
+    /// </summary>
+    /// <param name="continueAfterSave">Where this method continues on completion</param>
+    /// <param name="methodArg">argument for the continuation method</param>
+    private async void Alert_SaveAs(AfterSaving continueAfterSave, string methodArg)
+    {
+        string filepath = await DisplayPromptAsync("Save As", "Enter the full filepath and name" +
+            "\n(Format: \"filepath\\filename\"");
+        Debug.WriteLine("filepath: " + filepath);
+        if (filepath != null)
+        {
+            filepath += ".sprd";
+            spreadsheet.Save(filepath);
+            continueAfterSave(methodArg);
+        }
+    }
+
+    // TODO: handle circular-dependencies
 
     /*
      * I don't know how to comment .xaml files so I will note what's going on here.
