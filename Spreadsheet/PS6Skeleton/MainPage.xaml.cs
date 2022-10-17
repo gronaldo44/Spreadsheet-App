@@ -198,12 +198,13 @@ public partial class MainPage : ContentPage
         bool dontUpdate = false;
         IList<string> changed = null;   // this will never be used while null
         try
-        {
+        {   
+            // Add the input to the spreadsheet
             changed = spreadsheet.SetContentsOfCell(cell, newContents);
             foreach (string c in changed)
-            {
+            {   // Check if this update would break any dependencies
                 if (spreadsheet.GetCellValue(c) is FormulaError)
-                {
+                {   // A dependency broke and the changes should be reverted
                     spreadsheet.SetContentsOfCell(cell, oldContents);
                     dontUpdate = true;
                 }
@@ -224,7 +225,7 @@ public partial class MainPage : ContentPage
             Alert_InvalidContentsEntry();
         }
         else
-        {
+        {   // Each dependent cell's value is updated in the View
             UpdateGrid(changed);
         }
         UpdateNav(col, row);
@@ -425,8 +426,6 @@ public partial class MainPage : ContentPage
         }
     }
 
-    // TODO: handle circular-dependencies
-
     /*
      * I don't know how to comment .xaml files so I will note what's going on here.
      * 
@@ -447,4 +446,6 @@ public partial class MainPage : ContentPage
      *      The Second row is the spreadsheet
      *    
      */
+
+    // TODO: Write a README
 }
