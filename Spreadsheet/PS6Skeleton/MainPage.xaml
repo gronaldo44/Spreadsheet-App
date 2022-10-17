@@ -8,6 +8,12 @@
         <MenuBarItem Text="File">
             <MenuFlyoutItem Text="New" Clicked="New_Clicked" />
             <MenuFlyoutItem Text="Open" Clicked="Open_Clicked" />
+            <MenuFlyoutItem Text="Save As" Clicked="SaveAs_Clicked"/>
+        </MenuBarItem>
+        <MenuBarItem Text="Help">
+            <MenuFlyoutItem Text="Cell Inputs" Clicked="CellInputs_Clicked"/>
+            <MenuFlyoutItem Text="Saving" Clicked="Saving_Clicked"/>
+            <MenuFlyoutItem Text="ADDITIONAL-CONTENT" Clicked="AdditionalContent_Clicked"/>
         </MenuBarItem>
     </ContentPage.MenuBarItems>
 
@@ -26,18 +32,11 @@
                 Text="Selected Cell: "
                 TextColor="#1A181B"
                 IsEnabled="false"/>
-
             <Entry
                 x:Name="selectedCellValueBox"
                 Text="Value: "
                 TextColor="#1A181B"
                 IsEnabled="false"/>
-        </HorizontalStackLayout>
-        <HorizontalStackLayout
-            Grid.Row="0"
-            Grid.Column="1"
-            VerticalOptions="Center"
-            HorizontalOptions="Center">
             <Label 
                 Text="Cell Contents:"
                 TextColor="#1A181B"
@@ -47,6 +46,16 @@
                 Text=""
                 Completed="SetCellContentsBox_Completed"
                 TextColor="#1A181B"/>
+        </HorizontalStackLayout>
+        <HorizontalStackLayout
+            Grid.Row="0"
+            Grid.Column="1"
+            VerticalOptions="Center"
+            HorizontalOptions="Center">
+            <Label 
+                Text="ADDITIONAL-CONTENT"
+                TextColor="#1A181B"
+                Padding="5"/>
         </HorizontalStackLayout>
         
         <SS:SpreadsheetGrid 
