@@ -6,6 +6,7 @@ using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
+using WinRT;
 
 namespace SpreadsheetGUI;
 
@@ -208,9 +209,15 @@ public partial class MainPage : ContentPage
                 }
             }
         }
-        catch (CircularException)
+        catch (Exception ex)
         {
-            dontUpdate = true;
+            if (ex is FormulaFormatException || ex is CircularException)
+            {
+                dontUpdate = true;
+            } else
+            {
+                throw;
+            }
         }
         if (dontUpdate)
         {   // The cell was reverted to its old value and the user is allerted
