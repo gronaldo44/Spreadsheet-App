@@ -6,6 +6,7 @@ using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
+using WinRT;
 
 namespace SpreadsheetGUI;
 
@@ -97,7 +98,8 @@ public partial class MainPage : ContentPage
         if (saveOld)
         {   // ALERT ask where they want to save the spreadsheet
             Alert_SaveAs(AlterSpreadsheet, "reset");
-        } else
+        }
+        else
         {
             AlterSpreadsheet("reset");
         }
@@ -131,7 +133,8 @@ public partial class MainPage : ContentPage
                 if (saveOld)
                 {   // ALERT ask where they want to save the spreadsheet
                     Alert_SaveAs(OverwriteSpreadsheet, fileResult.FullPath);
-                } else
+                }
+                else
                 {
                     OverwriteSpreadsheet(fileResult.FullPath);
                 }
@@ -202,13 +205,28 @@ public partial class MainPage : ContentPage
         spreadsheetGrid.GetSelection(out int col, out int row);
 
         bool dontUpdate = false;
-        IList<string> changed = spreadsheet.SetContentsOfCell(cell, newContents);
-        foreach (string c in changed)
+        IList<string> changed = null;   // this will never be used while null
+        try
+        {   
+            // Add the input to the spreadsheet
+            changed = spreadsheet.SetContentsOfCell(cell, newContents);
+            foreach (string c in changed)
+            {   // Check if this update would break any dependencies
+                if (spreadsheet.GetCellValue(c) is FormulaError)
+                {   // A dependency broke and the changes should be reverted
+                    spreadsheet.SetContentsOfCell(cell, oldContents);
+                    dontUpdate = true;
+                }
+            }
+        }
+        catch (Exception ex)
         {
-            if (spreadsheet.GetCellValue(c) is FormulaError)
+            if (ex is FormulaFormatException || ex is CircularException)
             {
-                spreadsheet.SetContentsOfCell(cell, oldContents);
                 dontUpdate = true;
+            } else
+            {
+                throw;
             }
         }
         if (dontUpdate)
@@ -216,7 +234,7 @@ public partial class MainPage : ContentPage
             Alert_InvalidContentsEntry();
         }
         else
-        {
+        {   // Each dependent cell's value is updated in the View
             UpdateGrid(changed);
         }
         UpdateNav(col, row);
@@ -314,6 +332,7 @@ public partial class MainPage : ContentPage
             CalculateGridPosition(cell, out int col, out int row);
             if (!UpdateCell(cell, col, row))
             {
+
                 updated = false;
             }
         }
@@ -406,12 +425,15 @@ public partial class MainPage : ContentPage
         if (filepath != null)
         {
             filepath += ".sprd";
+            if (File.Exists(filepath))
+            {
+                await DisplayAlert("File Overwritten", "This operation resulted in a file " +
+                    "being overwritten.", "OK");
+            }
             spreadsheet.Save(filepath);
             continueAfterSave(methodArg);
         }
     }
-
-    // TODO: handle circular-dependencies
 
     /*
      * I don't know how to comment .xaml files so I will note what's going on here.
@@ -433,4 +455,6 @@ public partial class MainPage : ContentPage
      *      The Second row is the spreadsheet
      *    
      */
+
+    // TODO: Write a README
 }
