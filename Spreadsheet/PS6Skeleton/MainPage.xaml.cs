@@ -183,16 +183,25 @@ public partial class MainPage : ContentPage
     {
         Alert_SaveAs(AlterSpreadsheet, "");
     }
-
-    // TODO: Help menu
+    
     private void CellInputs_Clicked(object sender, EventArgs e)
     {
-        // TODO: implement
+        // TODO: Finish writing help menu
+        DisplayAlert("Help Menu: Cell Inputs",
+            "To edit a cell, select it and click the \"Cell Contents\" box and enter your content.\n" +
+            "The cell 'A1' is selected by default upon opening a new spreadsheet.\n" +
+            "Then, press enter to set the cell and update its value.\n\n" +
+            "The cell 'A1' is selected by default upon opening a new spreadsheet.\n",
+            "OK");
     }
 
     private void Saving_Clicked(object sender, EventArgs e)
     {
-        // TODO: implement
+        // TODO: Finish writing help menu
+        DisplayAlert("Help Menu: Saving",
+            "To save the spreadsheet, select \"File\" in the header then \"Save As\".\n" +
+            "Enter your chosen file path and press OK.",
+            "OK");
     }
 
     private void AdditionalContent_Clicked(object sender, EventArgs e)
