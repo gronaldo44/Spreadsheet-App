@@ -17,8 +17,6 @@ public partial class MainPage : ContentPage
 {
     private delegate void AfterSaving(string filepath);    // Method for following up saves
     private Spreadsheet spreadsheet;    // model
-    private List<IEnumerable<string>> associatedCells;    // Lists of cells associated with each other
-
 
     /// <summary>
     /// Constructs an empty spreadsheet GUI
@@ -31,7 +29,6 @@ public partial class MainPage : ContentPage
 
         // Initialize the Model
         spreadsheet = new Spreadsheet(validator, normalizer, "ps6");
-        associatedCells = new();
         // Initialize the View
         spreadsheetGrid.SetSelection(0, 0);
         UpdateNav(0, 0);
@@ -73,26 +70,11 @@ public partial class MainPage : ContentPage
     /// <param name="grid"></param>
     private void clickedCell(SpreadsheetGrid grid)
     {
-        // Update Grid
+        // Get the grid position of the cell that was clicked
         spreadsheetGrid.GetSelection(out int col, out int row);
-        spreadsheetGrid.GetValue(col, row, out string value);
         // Find largest cluster of associated cells
-        IEnumerable<string> largest = new List<string>();
-        foreach (IEnumerable<string> cellCluster in associatedCells)
-        {
-            if (cellCluster.Contains(CalculateCellName(col, row)))
-            {
-                if (cellCluster.Count() > largest.Count())
-                {
-                    largest = cellCluster;
-                }
-            }
-        }
-        // Change the color of each cell in the cluster
-        foreach(string cellName in largest)
-        {
 
-        }
+        // Change the color of each cell in the cluster
 
         // Update Nav
         UpdateNav(col, row);
@@ -369,13 +351,9 @@ public partial class MainPage : ContentPage
         {
             CalculateGridPosition(cell, out int col, out int row);
             if (!UpdateCell(cell, col, row))
-            {
+            {   // likely uneccessary 
                 updated = false;
             }
-        }
-        if (updated)
-        {   // Associate the cells 
-            associatedCells.Add(cellsToBeRecalculated);
         }
         return updated;
     }

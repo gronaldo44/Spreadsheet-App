@@ -60,8 +60,8 @@ public class SpreadsheetGrid : ScrollView, IDrawable
     // for click events
     private GraphicsView graphicsView = new();
 
-    // Whether or not this spreadsheet has been initialized
-    private bool initialized;
+    // Helps the spreadsheet understand which cells to highlight
+    private bool _cellSelected;
 
     public SpreadsheetGrid()
     {
@@ -74,7 +74,7 @@ public class SpreadsheetGrid : ScrollView, IDrawable
         this.Content = graphicsView;
         this.Scrolled += OnScrolled;
         this.Orientation = ScrollOrientation.Both;
-        this.initialized = false;   // This spreadsheet is new and hasn't been drawn yet
+        this._cellSelected = false;   
     }
 
     /// <summary>
@@ -83,6 +83,7 @@ public class SpreadsheetGrid : ScrollView, IDrawable
     public void Clear()
     {
         _values.Clear();
+        _cellSelected = false;
         Invalidate();
     }
 
@@ -257,28 +258,23 @@ public class SpreadsheetGrid : ScrollView, IDrawable
         canvas.Translate((float)_scrollX, (float)_scrollY);
 
         // Color the background of the data area white
-        Debug.WriteLine("\n\nDrawing non-assoc\n\n");
+        Debug.WriteLine("\n\nDrawing non-assoc");
         canvas.FillColor = Color.Parse("#F0F6F6");
         canvas.FillRectangle(
             LABEL_COL_WIDTH,
             LABEL_ROW_HEIGHT,
             (COL_COUNT - _firstColumn) * DATA_COL_WIDTH,
             (ROW_COUNT - _firstRow) * DATA_ROW_HEIGHT);
-        // Color the background of all associated cells
+        // Highlight associated cells
         // TODO: THIS IS THE ADDITIONAL-CONT
-        if (initialized)
+        if (_cellSelected)  // likely uneccessary
         {
-            Debug.WriteLine("\n\nDrawing assoc\n\n");
             canvas.FillColor = Color.Parse("#FFCCCB");
             canvas.FillRectangle(
-                LABEL_COL_WIDTH,
-                LABEL_ROW_HEIGHT,
-                (COL_COUNT - _selectedCol), 
-                (COL_COUNT - _selectedRow));
-                //LABEL_COL_WIDTH,
-                //LABEL_ROW_HEIGHT,
-                //(COL_COUNT - _firstColumn) * DATA_COL_WIDTH,
-                //(ROW_COUNT - _firstRow) * DATA_ROW_HEIGHT);
+                LABEL_COL_WIDTH + (_selectedCol * DATA_COL_WIDTH),
+                LABEL_ROW_HEIGHT + (_selectedRow * DATA_ROW_HEIGHT),
+                DATA_COL_WIDTH, 
+                DATA_ROW_HEIGHT);
         }
 
 
@@ -344,7 +340,7 @@ public class SpreadsheetGrid : ScrollView, IDrawable
         }
 
         // This spreadsheet has had its initial drawing done
-        initialized = true;
+        _cellSelected = true;
 
         canvas.RestoreState();
     }
