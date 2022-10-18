@@ -178,7 +178,7 @@ public partial class MainPage : ContentPage
     {
         // TODO: Finish writing help menu
         DisplayAlert("Help Menu: Saving",
-            "To save a spreadsheet, select \"File\" in the header then \"Save As\".\n" +
+            "To save the spreadsheet, select \"File\" in the header then \"Save As\".\n" +
             "Enter your chosen file path and press OK.",
             "OK");
     }
