@@ -17,6 +17,8 @@ public partial class MainPage : ContentPage
 {
     private delegate void AfterSaving(string filepath);    // Method for following up saves
     private Spreadsheet spreadsheet;    // model
+    private List<IEnumerable<string>> associatedCells;    // Lists of cells associated with each other
+
 
     /// <summary>
     /// Constructs an empty spreadsheet GUI
@@ -29,6 +31,7 @@ public partial class MainPage : ContentPage
 
         // Initialize the Model
         spreadsheet = new Spreadsheet(validator, normalizer, "ps6");
+        associatedCells = new();
         // Initialize the View
         spreadsheetGrid.SetSelection(0, 0);
         UpdateNav(0, 0);
@@ -73,6 +76,24 @@ public partial class MainPage : ContentPage
         // Update Grid
         spreadsheetGrid.GetSelection(out int col, out int row);
         spreadsheetGrid.GetValue(col, row, out string value);
+        // Find largest cluster of associated cells
+        IEnumerable<string> largest = new List<string>();
+        foreach (IEnumerable<string> cellCluster in associatedCells)
+        {
+            if (cellCluster.Contains(CalculateCellName(col, row)))
+            {
+                if (cellCluster.Count() > largest.Count())
+                {
+                    largest = cellCluster;
+                }
+            }
+        }
+        // Change the color of each cell in the cluster
+        foreach(string cellName in largest)
+        {
+
+        }
+
         // Update Nav
         UpdateNav(col, row);
     }
@@ -190,6 +211,8 @@ public partial class MainPage : ContentPage
     /// <param name="e"></param>
     private void SetCellContentsBox_Completed(object sender, EventArgs e)
     {
+        // Stop highlighting associated cells
+
         string cell = selectedCellNameBox.Text.Substring(15);
         string oldContents = InterpretCellContents(cell);
         string newContents = setCellContentsBox.Text;
@@ -198,7 +221,7 @@ public partial class MainPage : ContentPage
         bool dontUpdate = false;
         IList<string> changed = null;   // this will never be used while null
         try
-        {   
+        {
             // Add the input to the spreadsheet
             changed = spreadsheet.SetContentsOfCell(cell, newContents);
             foreach (string c in changed)
@@ -215,7 +238,8 @@ public partial class MainPage : ContentPage
             if (ex is FormulaFormatException || ex is CircularException)
             {
                 dontUpdate = true;
-            } else
+            }
+            else
             {
                 throw;
             }
@@ -229,6 +253,20 @@ public partial class MainPage : ContentPage
             UpdateGrid(changed);
         }
         UpdateNav(col, row);
+    }
+
+    /// <summary>
+    /// Highlights all other cells associated with the cell being changed
+    /// 
+    /// This function is called when the user focuses the SetCellContentsBox
+    /// text.
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e"></param>
+    private void SetCellContentsBox_Focused(object sender, EventArgs e)
+    {
+        // Find all associated cells
+        // Change the cells color
     }
 
     /// <summary>
@@ -323,9 +361,12 @@ public partial class MainPage : ContentPage
             CalculateGridPosition(cell, out int col, out int row);
             if (!UpdateCell(cell, col, row))
             {
-
                 updated = false;
             }
+        }
+        if (updated)
+        {   // Associate the cells 
+            associatedCells.Add(cellsToBeRecalculated);
         }
         return updated;
     }
@@ -339,10 +380,7 @@ public partial class MainPage : ContentPage
     /// <param name="row">Row of cell being focused</param>
     private void UpdateNav(int col, int row)
     {
-        char[] alphabet = { 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
-            'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z' };
-        string cellName = "" + alphabet[col] + (row + 1);
-
+        string cellName = CalculateCellName(col, row);
         spreadsheetGrid.GetValue(col, row, out string value);
         selectedCellValueBox.Text = "Value: " + value;
         selectedCellNameBox.Text = "Selected Cell: " + cellName;
@@ -366,6 +404,21 @@ public partial class MainPage : ContentPage
             result = "=" + result;
         }
         return result;
+    }
+
+    /// <summary>
+    /// Calcualtes a cell's name based off of its position in the spreadsheet 
+    /// grid.
+    /// </summary>
+    /// <param name="col"></param>
+    /// <param name="row"></param>
+    /// <returns>Cell name</returns>
+    private string CalculateCellName(int col, int row)
+    {
+        char[] alphabet = { 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+            'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z' };
+        string cellName = "" + alphabet[col] + (row + 1);
+        return cellName;
     }
 
     /// <summary>

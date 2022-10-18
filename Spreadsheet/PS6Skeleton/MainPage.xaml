@@ -45,6 +45,7 @@
             <Entry
                 x:Name="setCellContentsBox"
                 Text=""
+                Focused="SetCellContentsBox_Focused"
                 Completed="SetCellContentsBox_Completed"
                 TextColor="#1A181B"/>
         </HorizontalStackLayout>
