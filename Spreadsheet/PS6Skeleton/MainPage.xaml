@@ -19,9 +19,9 @@
 
     <Grid 
         RowDefinitions="50, *" 
-        ColumnDefinitions="*, *"
+        ColumnDefinitions="*"
         BackgroundColor="#8B9474">
-        
+
         <HorizontalStackLayout 
             Grid.Row="0"
             Grid.Column="0"
@@ -45,21 +45,10 @@
             <Entry
                 x:Name="setCellContentsBox"
                 Text=""
-                Focused="SetCellContentsBox_Focused"
                 Completed="SetCellContentsBox_Completed"
                 TextColor="#1A181B"/>
         </HorizontalStackLayout>
-        <HorizontalStackLayout
-            Grid.Row="0"
-            Grid.Column="1"
-            VerticalOptions="Center"
-            HorizontalOptions="Center">
-            <Label 
-                Text="ADDITIONAL-CONTENT"
-                TextColor="#1A181B"
-                Padding="5"/>
-        </HorizontalStackLayout>
-        
+
         <SS:SpreadsheetGrid 
             Grid.Row="1"
             Grid.ColumnSpan="2"
