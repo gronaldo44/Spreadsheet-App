@@ -76,7 +76,7 @@ namespace SS
         public override bool Changed
         {
             get;
-            protected set;
+            set;
         }
 
         /// <summary>

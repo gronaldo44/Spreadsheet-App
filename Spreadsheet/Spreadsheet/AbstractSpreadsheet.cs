@@ -123,7 +123,7 @@ namespace SS
         /// True if this spreadsheet has been modified since it was created or saved                  
         /// (whichever happened most recently); false otherwise.
         /// </summary>
-        public abstract bool Changed { get; protected set; }
+        public abstract bool Changed { get; set; }
 
         // ADDED FOR PS5
         /// <summary>
