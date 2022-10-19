@@ -61,7 +61,7 @@ public class SpreadsheetGrid : ScrollView, IDrawable
     private GraphicsView graphicsView = new();
 
     // Helps the spreadsheet understand which cells to highlight
-    private bool _cellSelected;
+    public IEnumerable<string> associatedCells = new List<string>();
 
     public SpreadsheetGrid()
     {
@@ -73,8 +73,7 @@ public class SpreadsheetGrid : ScrollView, IDrawable
         graphicsView.EndInteraction += OnEndInteraction;
         this.Content = graphicsView;
         this.Scrolled += OnScrolled;
-        this.Orientation = ScrollOrientation.Both;
-        this._cellSelected = false;   
+        this.Orientation = ScrollOrientation.Both; 
     }
 
     /// <summary>
@@ -83,7 +82,7 @@ public class SpreadsheetGrid : ScrollView, IDrawable
     public void Clear()
     {
         _values.Clear();
-        _cellSelected = false;
+        associatedCells = new List<string>();
         Invalidate();
     }
 
@@ -258,21 +257,21 @@ public class SpreadsheetGrid : ScrollView, IDrawable
         canvas.Translate((float)_scrollX, (float)_scrollY);
 
         // Color the background of the data area white
-        Debug.WriteLine("\n\nDrawing non-assoc");
         canvas.FillColor = Color.Parse("#F0F6F6");
         canvas.FillRectangle(
             LABEL_COL_WIDTH,
             LABEL_ROW_HEIGHT,
             (COL_COUNT - _firstColumn) * DATA_COL_WIDTH,
             (ROW_COUNT - _firstRow) * DATA_ROW_HEIGHT);
-        // Highlight associated cells
+        // Highlight associated cells light red
         // TODO: THIS IS THE ADDITIONAL-CONT
-        if (_cellSelected)  // likely uneccessary
+        foreach (string cell in associatedCells)
         {
+            CalculateGridPosition(cell, out int col, out int row);
             canvas.FillColor = Color.Parse("#FFCCCB");
             canvas.FillRectangle(
-                LABEL_COL_WIDTH + (_selectedCol * DATA_COL_WIDTH),
-                LABEL_ROW_HEIGHT + (_selectedRow * DATA_ROW_HEIGHT),
+                LABEL_COL_WIDTH + (col * DATA_COL_WIDTH),
+                LABEL_ROW_HEIGHT + (row * DATA_ROW_HEIGHT),
                 DATA_COL_WIDTH, 
                 DATA_ROW_HEIGHT);
         }
@@ -339,9 +338,6 @@ public class SpreadsheetGrid : ScrollView, IDrawable
             }
         }
 
-        // This spreadsheet has had its initial drawing done
-        _cellSelected = true;
-
         canvas.RestoreState();
     }
 
@@ -380,5 +376,23 @@ public class SpreadsheetGrid : ScrollView, IDrawable
             LABEL_ROW_HEIGHT + y * DATA_ROW_HEIGHT + (DATA_ROW_HEIGHT - size.Height) / 2,
             size.Width, size.Height,
               HorizontalAlignment.Right, VerticalAlignment.Center);
+    }
+
+    /// <summary>
+    /// Calculates the grid position of the argued cell
+    /// 
+    /// For example, the grid position of cell A1 is column-0, row-0.
+    /// </summary>
+    /// <param name="cell"></param>
+    /// <param name="col"></param>
+    /// <param name="row"></param>
+    private void CalculateGridPosition(string cell, out int col, out int row)
+    {
+        // Convert the cell letter to its corresponding numerical value (a = 0)
+        int index = char.ToUpper(cell.First()) - 64;
+        col = index - 1;
+        // Convert the model interpretation of the row to the view interpretation
+        index = int.Parse(cell.Substring(1));
+        row = index - 1;
     }
 }

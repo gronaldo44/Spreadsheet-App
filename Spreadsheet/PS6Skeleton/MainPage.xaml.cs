@@ -70,14 +70,20 @@ public partial class MainPage : ContentPage
     /// <param name="grid"></param>
     private void clickedCell(SpreadsheetGrid grid)
     {
+        // Protect integrity of spreadsheet data
+        bool changed = spreadsheet.Changed;
+
         // Get the grid position of the cell that was clicked
         spreadsheetGrid.GetSelection(out int col, out int row);
-        // Find largest cluster of associated cells
-
-        // Change the color of each cell in the cluster
-
-        // Update Nav
+        // Get each cell associated with the clicked cell
+        string cell = CalculateCellName(col, row);
+        string contents = InterpretCellContents(cell);
+        IEnumerable<string> associatedCells = spreadsheet.SetContentsOfCell(cell, contents);
+        // Highlight each cell associated with the clicked cell
+        UpdateGrid(associatedCells);
         UpdateNav(col, row);
+
+        spreadsheet.Changed = changed;
     }
 
     /// <summary>
@@ -165,7 +171,7 @@ public partial class MainPage : ContentPage
     {
         Alert_SaveAs(AlterSpreadsheet, "");
     }
-    
+
     private void CellInputs_Clicked(object sender, EventArgs e)
     {
         // TODO: Finish writing help menu
@@ -188,7 +194,7 @@ public partial class MainPage : ContentPage
 
     private void AdditionalContent_Clicked(object sender, EventArgs e)
     {
-        // TODO: Rename, come up with, and implement
+        // TODO: Explain how highlighting cells works
     }
 
     /// <summary>
@@ -202,13 +208,12 @@ public partial class MainPage : ContentPage
     /// <param name="e"></param>
     private void SetCellContentsBox_Completed(object sender, EventArgs e)
     {
-        // Stop highlighting associated cells
-
         string cell = selectedCellNameBox.Text.Substring(15);
         string oldContents = InterpretCellContents(cell);
         string newContents = setCellContentsBox.Text;
         spreadsheetGrid.GetSelection(out int col, out int row);
 
+        // Attempt to update the spreadsheet
         bool dontUpdate = false;
         IList<string> changed = null;   // this will never be used while null
         try
@@ -235,6 +240,8 @@ public partial class MainPage : ContentPage
                 throw;
             }
         }
+
+        // Did the spreadsheet update properly?
         if (dontUpdate)
         {   // The cell was reverted to its old value and the user is allerted
             Alert_InvalidContentsEntry();
@@ -244,20 +251,6 @@ public partial class MainPage : ContentPage
             UpdateGrid(changed);
         }
         UpdateNav(col, row);
-    }
-
-    /// <summary>
-    /// Highlights all other cells associated with the cell being changed
-    /// 
-    /// This function is called when the user focuses the SetCellContentsBox
-    /// text.
-    /// </summary>
-    /// <param name="sender"></param>
-    /// <param name="e"></param>
-    private void SetCellContentsBox_Focused(object sender, EventArgs e)
-    {
-        // Find all associated cells
-        // Change the cells color
     }
 
     /// <summary>
@@ -294,20 +287,24 @@ public partial class MainPage : ContentPage
         {
             validSpreadsheet = false;
         }
+
         // Overwrite the view
         IEnumerable<string> namedCells = spreadsheet.GetNamesOfAllNonemptyCells();
+        // Update the grid with all values in the spreadsheet
         spreadsheetGrid.Clear();
         if (!UpdateGrid(namedCells))
-        {
+        {   // The loaded spreadsheet is defined as invalid for a spreadsheetGUI
             validSpreadsheet = false;
         }
+        // Update the nav
         if (validSpreadsheet)
         {
+            spreadsheet.Changed = false;
             spreadsheetGrid.SetSelection(0, 0);
             UpdateNav(0, 0);
         }
         else
-        {
+        {   // The loaded spreadsheet is invalid and does not overwrite
             spreadsheet = oldSpreadsheet;
             Alert_SpreadsheetCannotBeLoaded();
         }
@@ -315,13 +312,13 @@ public partial class MainPage : ContentPage
 
     /// <summary>
     /// Updates the contents of the argued cell to the argued contents and 
-    /// returns whether or not the cell was updated.
+    /// returns whether or not the cell updated without errors.
     /// </summary>
     /// <param name="cell"></param>
     /// <param name="contents"></param>
     /// <param name="col">Column of the cell in the spreadsheetGUI</param>
     /// <param name="row">Row of the cell in the spreadsheetGUI</param>
-    /// <returns>Whether or not the cell was updated</returns>
+    /// <returns>Whether or not the cell update is valid</returns>
     private bool UpdateCell(string cell, int col, int row)
     {
         if (spreadsheet.GetCellValue(cell) is FormulaError)
@@ -338,23 +335,27 @@ public partial class MainPage : ContentPage
     /// <summary>
     /// Updates the grid to reflect the values inside the Model if it 
     /// would not result in any formula errors and returns whether or 
-    /// not the grid was updated
+    /// not the grid will update without errors
     /// 
     /// The grid is used to View the values inside the Model
     /// </summary>
-    /// <returns>Whether or not the grid was updated</returns>
+    /// <returns>Whether or not the grid should update</returns>
     private bool UpdateGrid(IEnumerable<string> cellsToBeRecalculated)
     {
         bool updated = true;
 
+        // Update the grid in the View with each cell value that changed
         foreach (string cell in cellsToBeRecalculated)
         {
             CalculateGridPosition(cell, out int col, out int row);
             if (!UpdateCell(cell, col, row))
-            {   // likely uneccessary 
+            {   // One of the new values is invalid and the grid should not update
                 updated = false;
             }
         }
+        // Highlight all associated cells
+        spreadsheetGrid.associatedCells = cellsToBeRecalculated;
+
         return updated;
     }
 
@@ -443,6 +444,25 @@ public partial class MainPage : ContentPage
     }
 
     /// <summary>
+    /// Alerts the User that they entered a bad filepath
+    /// </summary>
+    private async void Alert_InvalidFilePath()
+    {
+        await DisplayAlert("Invalid Filepath", "Could not write to that file path.\n" +
+            "please enter the exact file path followed by the spreadsheet name\n\n" +
+            "Example: C:\\Users\\myAccount\\Documents\\mySpreadsheet", "OK");
+    }
+
+    /// <summary>
+    /// Alerts the User that they have overwritten a file on their machine
+    /// </summary>
+    private async void Alert_FileOverwritten()
+    {
+        await DisplayAlert("File Overwritten", "This operation resulted in a file " +
+                    "being overwritten.", "OK");
+    }
+
+    /// <summary>
     /// Alerts the user asking where they want to save the spreadsheet, saves it there, 
     /// then continues onward to another method.
     /// </summary>
@@ -458,11 +478,17 @@ public partial class MainPage : ContentPage
             filepath += ".sprd";
             if (File.Exists(filepath))
             {
-                await DisplayAlert("File Overwritten", "This operation resulted in a file " +
-                    "being overwritten.", "OK");
+                Alert_FileOverwritten();
             }
-            spreadsheet.Save(filepath);
-            continueAfterSave(methodArg);
+            try
+            {
+                spreadsheet.Save(filepath);
+                continueAfterSave(methodArg);
+            }
+            catch (SpreadsheetReadWriteException)
+            {
+                Alert_InvalidFilePath();
+            }
         }
     }
 
