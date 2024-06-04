@@ -174,7 +174,7 @@ namespace SpreadsheetUtilities
         ///
         /// This method should never throw an exception.
         /// </summary>
-        public object Evaluate(Func<string, double> lookup)
+        public object Evaluate(Func<string, double> lookup) 
         {
             // create tokens
             Stack<string> vals = new();

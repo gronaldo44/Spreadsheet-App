@@ -27,6 +27,7 @@ namespace SS
     /// </summary>
     internal class Cell
     {
+        #region Class attributes
         private object _content;
         public object Contents      // Either a string, double or Formula
         {
@@ -46,7 +47,9 @@ namespace SS
         /// List of cells whose value directly depends on the value of this cell
         /// </summary>
         public List<string> DirectDependents { get; }
+        #endregion
 
+        #region Constructors
         /// <summary>
         /// Constructs a cell with the argued contents to be evaluated and an empty list of
         /// empty direct dependents
@@ -59,7 +62,7 @@ namespace SS
             this.DirectDependents = new();
             this.Value = contents;
         }
-
+        #endregion
     }
 
     /// <summary>
@@ -67,6 +70,7 @@ namespace SS
     /// </summary>
     public class Spreadsheet : AbstractSpreadsheet
     {
+        #region Class attributes
         private DependencyGraph cellDependency;     // Dependency status for cells with Formula contents
         private Dictionary<string, Cell> cells;     // Cell name -> cell data
 
@@ -78,7 +82,9 @@ namespace SS
             get;
             set;
         }
+        #endregion
 
+        #region Constructors
         /// <summary>
         /// Constructs an empty spreadsheet with default validity and version.
         /// </summary>
@@ -170,7 +176,9 @@ namespace SS
                 throw new SpreadsheetReadWriteException("Incompatible versions");
             }
         }
+        #endregion
 
+        #region Cell Getters
         /// <summary>
         /// Get the contents of the cell with this name
         /// 
@@ -233,51 +241,41 @@ namespace SS
         }
 
         /// <summary>
-        /// Saves the current state of this spreadsheet to the argued filename
-        /// 
-        /// Save state is in JSON format:
-        ///     {
-        ///         "cells" : {
-        ///             "a1": {
-        ///                 "stringForm": value
-        ///             },
-        ///             "a2": {
-        ///                 "stringForm": value
-        ///             }
-        ///         },
-        ///         "Version": version
-        ///     }
-        ///     
-        /// Constructing a spreadsheet with the given filename will initialize a 
-        /// spreadsheet in this current save state.
-        /// 
-        /// If there is a problem writing to the file, throws a SpreadsheetReadWriteException
+        /// Returns an enumeration, without duplicates, of the names of all cells whose
+        /// values depend directly on the value of the named cell.
         /// </summary>
-        /// <param name="filename"></param>
-        /// <exception cref="SpreadsheetReadWriteException"></exception>
-        public override void Save(string filename)
+        /// <param name="name"></param>
+        /// <returns></returns>
+        protected override IEnumerable<string> GetDirectDependents(string name)
         {
-            // Compresss the cells data in this spreadsheet
-            Dictionary<string, CompressedCell> savedCells = new();
-            foreach (string name in cells.Keys)
-            {
-                savedCells.Add(name, new CompressedCell(cells[name].Contents));
-            }
-
-            // Write the compressed data to the save file
-            string saveState = JsonConvert.SerializeObject(new SaveState(savedCells, Version));
-            try
-            {
-                File.WriteAllText(filename, saveState);
-                Changed = false;
-            }
-            catch
-            {
-                throw new SpreadsheetReadWriteException(
-                    "There was a problem writing to the file: \"" + filename + "\"");
-            }
+            return cells[name].DirectDependents;
         }
 
+        /// <summary>
+        /// Returns a list consisting of name plus the names of all other cells whos values,
+        /// depends directly or indirectly, on the names of cell
+        /// 
+        /// throws CircularException if a circular dependency is made
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        /// <exception cref="CircularException">A circular dependency was made</exception>
+        private IList<string> GetDescendants(string name)
+        {
+            List<string> result = new();
+            foreach (string descendant in GetCellsToRecalculate(name))
+            {
+                result.Add(descendant);
+                if (cells[descendant].Contents is Formula)
+                {   // This cell's value should be recalculated because its ancestor's changed
+                    RecalculateValue(descendant, (Formula)(cells[descendant].Contents));
+                }
+            }
+            return result;
+        }
+        #endregion
+
+        #region Cell Setters
         /// <summary>
         /// If name is invalid, throws an InvalidNameException
         /// 
@@ -397,40 +395,6 @@ namespace SS
         }
 
         /// <summary>
-        /// Returns an enumeration, without duplicates, of the names of all cells whose
-        /// values depend directly on the value of the named cell.
-        /// </summary>
-        /// <param name="name"></param>
-        /// <returns></returns>
-        protected override IEnumerable<string> GetDirectDependents(string name)
-        {
-            return cells[name].DirectDependents;
-        }
-
-        /// <summary>
-        /// Returns a list consisting of name plus the names of all other cells whos values,
-        /// depends directly or indirectly, on the names of cell
-        /// 
-        /// throws CircularException if a circular dependency is made
-        /// </summary>
-        /// <param name="name"></param>
-        /// <returns></returns>
-        /// <exception cref="CircularException">A circular dependency was made</exception>
-        private IList<string> GetDescendants(string name)
-        {
-            List<string> result = new();
-            foreach (string descendant in GetCellsToRecalculate(name))
-            {
-                result.Add(descendant);
-                if (cells[descendant].Contents is Formula)
-                {   // This cell's value should be recalculated because its ancestor's changed
-                    RecalculateValue(descendant, (Formula)(cells[descendant].Contents));
-                }
-            }
-            return result;
-        }
-
-        /// <summary>
         /// Documents a cell in the spreadsheet with the given contents
         /// 
         /// throws CircularException if a circular dependency is made
@@ -483,48 +447,9 @@ namespace SS
                 return result;
             }
         }
+        #endregion
 
-        /// <summary>
-        /// Checks if a cell name is valid. 
-        /// 
-        /// A valid cell name consists of one or more letters followed by one or more digits
-        /// </summary>
-        /// <param name="n"></param>
-        /// <returns>Whether or not this name is valid</returns>
-        private static bool IsValidCellName(string n)
-        {
-            string varPattern = "^[a-zA-Z]+[0-9]+$";
-            return Regex.IsMatch(n, varPattern);
-        }
-
-        /// <summary>
-        /// Recalculates the value of the named cell by looking up the values of 
-        /// other cells its contents depend on in this spreadsheet.
-        /// </summary>
-        /// <param name="name"></param>
-        /// <param name="contents"></param>
-        private void RecalculateValue(string name, Formula contents)
-        {
-            cells[name].Value = contents.Evaluate(LookupCell);
-        }
-
-        /// <summary>
-        /// Lookups up the value of the named cell
-        /// </summary>
-        /// <param name="name"></param>
-        /// <returns>Value of the named cell</returns>
-        private double LookupCell(string name)
-        {
-            if (cells[name].Value is string)
-            {   // Nested dependency
-                return LookupCell((string)cells[name].Value);
-            }
-            else
-            {
-                return (double)cells[name].Value;  // May throw a FormulaError
-            }
-        }
-
+        #region Saving
         /// <summary>
         /// Compressed spreadsheet for storage purposes
         /// </summary>
@@ -571,5 +496,95 @@ namespace SS
                 }
             }
         }
+
+        /// <summary>
+        /// Saves the current state of this spreadsheet to the argued filename
+        /// 
+        /// Save state is in JSON format:
+        ///     {
+        ///         "cells" : {
+        ///             "a1": {
+        ///                 "stringForm": value
+        ///             },
+        ///             "a2": {
+        ///                 "stringForm": value
+        ///             }
+        ///         },
+        ///         "Version": version
+        ///     }
+        ///     
+        /// Constructing a spreadsheet with the given filename will initialize a 
+        /// spreadsheet in this current save state.
+        /// 
+        /// If there is a problem writing to the file, throws a SpreadsheetReadWriteException
+        /// </summary>
+        /// <param name="filename"></param>
+        /// <exception cref="SpreadsheetReadWriteException"></exception>
+        public override void Save(string filename)
+        {
+            // Compresss the cells data in this spreadsheet
+            Dictionary<string, CompressedCell> savedCells = new();
+            foreach (string name in cells.Keys)
+            {
+                savedCells.Add(name, new CompressedCell(cells[name].Contents));
+            }
+
+            // Write the compressed data to the save file
+            string saveState = JsonConvert.SerializeObject(new SaveState(savedCells, Version));
+            try
+            {
+                File.WriteAllText(filename, saveState);
+                Changed = false;
+            }
+            catch
+            {
+                throw new SpreadsheetReadWriteException(
+                    "There was a problem writing to the file: \"" + filename + "\"");
+            }
+        }
+        #endregion
+
+        #region Misc Helper Methods
+        /// <summary>
+        /// Checks if a cell name is valid. 
+        /// 
+        /// A valid cell name consists of one or more letters followed by one or more digits
+        /// </summary>
+        /// <param name="n"></param>
+        /// <returns>Whether or not this name is valid</returns>
+        private static bool IsValidCellName(string n)
+        {
+            string varPattern = "^[a-zA-Z]+[0-9]+$";
+            return Regex.IsMatch(n, varPattern);
+        }
+
+        /// <summary>
+        /// Recalculates the value of the named cell by looking up the values of 
+        /// other cells its contents depend on in this spreadsheet.
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="contents"></param>
+        private void RecalculateValue(string name, Formula contents)
+        {
+            cells[name].Value = contents.Evaluate(LookupCell);
+        }
+
+        /// <summary>
+        /// Lookups up the value of the named cell
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns>Value of the named cell</returns>
+        private double LookupCell(string name)
+        {
+            if (cells[name].Value is string)
+            {   // Nested dependency
+                return LookupCell((string)cells[name].Value);
+            }
+            else
+            {
+                return (double)cells[name].Value;  // May throw a FormulaError
+            }
+        }
+        #endregion
     }
 }
